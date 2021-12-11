@@ -15,9 +15,17 @@ To get a running copy of the application on your system, you must have:
 Please run `python3 server.py`
 - Client Code:
 Please run `python3 gui.py`
+## Usage Instructions for Broadcast feature
+- Server Code:
+Please run `python3 audio/server.py`
+- Client Code:
+Please run `python3 audio/client.py`
+
 ## References
 We used the following references for the Audio part of the project:  
 https://pyshine.com/Socket-Programming-send-receive-live-audio/
+https://pyshine.com/How-to-send-audio-from-PyAudio-over-socket/
+
 ### Authors: 
 
 - [Anmol Rastogi](https://github.com/Anmol42) (AI19BTECH11021)
