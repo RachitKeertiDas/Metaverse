@@ -20,6 +20,11 @@ def audio_stream_UDP():
                     rate=44100,
                     output=True,
                     frames_per_buffer=CHUNK)
+    stream_2 = p.open(format=pyaudio.paInt16,
+                    channels=2,
+                    rate=44100,
+                    input=True,
+                    frames_per_buffer=CHUNK)
 
     # create socket
     def record(stream, CHUNK):
@@ -27,7 +32,7 @@ def audio_stream_UDP():
             q_send.put(stream.read(CHUNK))
        
     def send_audio():
-        t2=threading.Thread(target=record,args=(stream,CHUNK,))
+        t2=threading.Thread(target=record,args=(stream_2,CHUNK,))
         t2.start()
         time.sleep(1)
         while True:
@@ -45,7 +50,7 @@ def audio_stream_UDP():
     t1.start()
     time.sleep(1)
     print('Now Playing...')
-    while not q.empty():
+    while True:
         frame = q.get()
         stream.write(frame)
     
