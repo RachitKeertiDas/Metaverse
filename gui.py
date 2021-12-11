@@ -30,22 +30,27 @@ def send_chat(clientSocket, message : str):
     clientSocket.send(message.encode())
     return
 
-def listen_chat(clientSocket, chatBox, my_username):
+
+def listen_chat(clientSocket, chatBox, metaverse,  my_username):
     # Listen From Server. If Server sends the message exit, we terminate"
     while True:
         message = clientSocket.recv(1024)
         # Do Whatever with the message here, pass it to the GUI for rendering
         msg = message.decode()
-        try:
+        if 1:
             msg_dict = json.loads(msg)
-            if msg_dict['username'] == my_username:
-                continue
-        except:
+            if msg_dict['component'] == 'chat':
+                if msg_dict['username'] == my_username:
+                    continue
+                chatBox.update_messages(msg)
+            elif msg_dict['component'] == 'grid':
+                if msg_dict['username'] == my_username:
+                    continue
+                metaverse.update_users(msg_dict["username"],msg_dict["xpos"], msg_dict["ypos"])
+        else:
             print("Malformed Server Message")
             continue
-
-        chatBox.update_messages(msg)
-
+        
         if msg == 'exit':
             clientSocket.close()
             return 
@@ -111,8 +116,18 @@ class Floor():
             rect_start = (self.start_dim[0]+ user.y_pos*self.grid_size[0]+2, self.start_dim[1]+user.x_pos*self.grid_size[0]+2)
             pygame.draw.rect(Screen, user.color,pygame.Rect(rect_start,(self.grid_size[0]-4,self.grid_size[1]-4)))
             
-    def update_users(self, username):
-        print(username)
+    def update_users(self, username, x_pos, y_pos):
+
+        if username not in self.users:
+            # Add him
+            new_user = User(BLUE_COLOR, username, x_pos, y_pos)
+            self.add_user(new_user)
+
+        current_x = self.users[username].x_pos
+        current_y = self.users[username].y_pos
+        print(f"Trying to Update {username} to position ({x_pos}, {y_pos})")
+        self.update_user_deltas(username, delta_x =(x_pos-current_x), delta_y = (y_pos-current_y) )
+
         self.draw(self.screen)
         return 
     
@@ -123,7 +138,13 @@ class Floor():
             # We should actually create a new user, drop at (0,0)
         else:
             self.users[username].update(delta_x, delta_y) 
-        
+
+        # Also convey to the server that we changed position if this is user recieved
+        if username == my_username:
+            print("Pinging Server")
+            msg_dict = {"component":"grid", "username":username,"xpos":self.users[username].x_pos, "ypos":self.users[username].y_pos}
+            send_chat(clientSocket, json.dumps(msg_dict))
+         
         self.draw(self.screen)
             
         
@@ -218,11 +239,14 @@ chatBox.draw(canvas)
 ## Create a Separate Listening Thread
 
 # send_proc = threading.Thread(target=send_chat, args=[clientSocket])
-listen_proc = threading.Thread(target=listen_chat, args=[clientSocket, chatBox, my_username])
+listen_proc = threading.Thread(target=listen_chat, args=[clientSocket, chatBox, metaverse ,my_username])
 
 #send_proc.start()
 listen_proc.start()
 
+# Just Inform everyone else of our position
+
+metaverse.update_user_deltas(my_username, 0,0)
 ## Start Listening to Input Now
 
 
@@ -257,6 +281,7 @@ while True:
                 elif event.key == pygame.K_UP or event.key == pygame.K_w:
                     print("UP")
                     metaverse.update_user_deltas(my_username,delta_x=-1)
+
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     print("LEFT")
                     # metaverse.update_users(my_username)
@@ -272,15 +297,17 @@ while True:
 
         pygame.display.flip()
 pygame.quit()
-
+clientSocket.close()
 
 ## FORMAT FOR SENDING MESSAGES TO THE SERVER
 
 """
 json message
 {
-    "component": "chat"/"audio", "misc",
+    "component": "chat"/"audio", "misc", "grid"
     "username" : username
     "text" : text
+    "xpos" : xpos
+    "ypos" : ypos
 }
 """
