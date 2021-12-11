@@ -12,13 +12,13 @@ CHAT_DIM = (350,600)
 CHAT_START_DIM = (15,150)
 TILE_COUNT = 10
 
-BG_COLOR  = (7,54,120)
+BG_COLOR  = (24,44,97)
 GREEN_COLOR = (0, 255,0)
 BLUE_COLOR = (0,0,255)
 RED_COLOR = (255,0,0)
 COLORS = []
 
-serverName = 'localhost'
+serverName = '44.201.79.95'
 serverPort = 12000
 
 clientSocket = socket(AF_INET, SOCK_STREAM)
@@ -159,7 +159,7 @@ class Chat():
         self.text = ''
         self.font  = pygame.font.SysFont("Ubuntu", 18)
         self.screen = Screen
-        self.messages = [{"username":"FrostyNight", "text":"Finish this sem"},{"username":"Angad11121", "text":"Finish this sem"}]
+        self.messages = [{"username":"FrostyNight", "text":"Hi, Welcome"},{"username":"Angad11121", "text":"Click on the text to get started"}]
         # self.messages = [{"username":"FrostyNigh#t", "text":"1"},{"username":"2", "text":"2"}]
         pygame.draw.rect(Screen, (220,220,220), self.input_rect)
         self.draw(self.screen)
@@ -251,53 +251,61 @@ metaverse.update_user_deltas(my_username, 0,0)
 
 
 while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            break
-        
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if chatBox.input_rect.collidepoint(event.pos):
-                current_focus = "chat"
-            else:
-                current_focus = "grid"    
-            continue
-        
-        if current_focus == "grid":
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_t:
+    try:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                send_chat(clientSocket, 'exit')
+                pygame.quit()
+                break
+            
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if chatBox.input_rect.collidepoint(event.pos):
                     current_focus = "chat"
+                else:
+                    current_focus = "grid"    
+                continue
+            
+            if current_focus == "grid":
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_t:
+                        current_focus = "chat"
+            
+            if current_focus == "chat":
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        current_focus = "grid"
+
+            if current_focus == "grid":
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                        print("DOWN")
+                        metaverse.update_user_deltas(my_username,delta_x=1)
+                    elif event.key == pygame.K_UP or event.key == pygame.K_w:
+                        print("UP")
+                        metaverse.update_user_deltas(my_username,delta_x=-1)
+
+                    elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                        print("LEFT")
+                        # metaverse.update_users(my_username)
+                        metaverse.update_user_deltas(my_username,delta_y=-1)
+                    elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                        print("RIGHT")
+                        metaverse.update_user_deltas(my_username,delta_y=1)
+                        # Insert Socket Call here Send a message to server saying we've updated the position
+            else:
+                chatBox.chat_input(event)
+
+            clock.tick(60) # Cap the FPS
+
+            pygame.display.flip()
+    except KeyboardInterrupt:
+        print("Shutting Down Gracefully")
+        send_chat(clientSocket, 'exit')
+        pygame.quit()
+        break
         
-        if current_focus == "chat":
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    current_focus = "grid"
-
-        if current_focus == "grid":
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    print("DOWN")
-                    metaverse.update_user_deltas(my_username,delta_x=1)
-                elif event.key == pygame.K_UP or event.key == pygame.K_w:
-                    print("UP")
-                    metaverse.update_user_deltas(my_username,delta_x=-1)
-
-                elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    print("LEFT")
-                    # metaverse.update_users(my_username)
-                    metaverse.update_user_deltas(my_username,delta_y=-1)
-                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    print("RIGHT")
-                    metaverse.update_user_deltas(my_username,delta_y=1)
-                    # Insert Socket Call here Send a message to server saying we've updated the position
-        else:
-            chatBox.chat_input(event)
-
-        clock.tick(60) # Cap the FPS
-
-        pygame.display.flip()
-pygame.quit()
-clientSocket.close()
+#pygame.quit()
+# clientSocket.close()
 
 ## FORMAT FOR SENDING MESSAGES TO THE SERVER
 

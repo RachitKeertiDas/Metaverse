@@ -1,5 +1,6 @@
 from socket import *
 import threading
+import json
 
 serverPort = 12000 
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -7,7 +8,7 @@ serverSocket.bind(('', serverPort))
 
 serverSocket.listen(20)
 
-print("The Server is Ready to receive")
+print(f"Server Listening at port [{serverPort}]")
 
 conns = [False for i in range(20)]
 
