@@ -26,7 +26,7 @@ We used the following references for the Audio part of the project:
 https://pyshine.com/Socket-Programming-send-receive-live-audio/
 https://pyshine.com/How-to-send-audio-from-PyAudio-over-socket/
 
-For issues regarding pyaudio installation
+For issues regarding pyaudio installation  
 https://stackoverflow.com/questions/20023131/cannot-install-pyaudio-gcc-error
 
 ### Authors: 
