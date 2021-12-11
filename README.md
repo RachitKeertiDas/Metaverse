@@ -23,7 +23,7 @@ Please run `python3 audio/client.py`
 
 ## References
 We used the following references for the Audio part of the project:  
-https://pyshine.com/Socket-Programming-send-receive-live-audio/
+https://pyshine.com/Socket-Programming-send-receive-live-audio/  
 https://pyshine.com/How-to-send-audio-from-PyAudio-over-socket/
 
 For issues regarding pyaudio installation  
