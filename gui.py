@@ -119,7 +119,6 @@ class Floor():
     def update_users(self, username, x_pos, y_pos):
 
         if username not in self.users:
-            # Add him
             new_user = User(BLUE_COLOR, username, x_pos, y_pos)
             self.add_user(new_user)
 
