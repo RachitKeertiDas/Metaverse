@@ -1,5 +1,8 @@
 import pygame
 import json
+import threading
+import textwrap as tr
+from socket import *
 
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 900
@@ -14,6 +17,40 @@ GREEN_COLOR = (0, 255,0)
 BLUE_COLOR = (0,0,255)
 RED_COLOR = (255,0,0)
 COLORS = []
+
+serverName = 'localhost'
+serverPort = 12000
+
+clientSocket = socket(AF_INET, SOCK_STREAM)
+clientSocket.connect((serverName,serverPort))
+
+
+def send_chat(clientSocket, message : str):
+    print(message)
+    clientSocket.send(message.encode())
+    return
+
+def listen_chat(clientSocket, chatBox, my_username):
+    # Listen From Server. If Server sends the message exit, we terminate"
+    while True:
+        message = clientSocket.recv(1024)
+        # Do Whatever with the message here, pass it to the GUI for rendering
+        msg = message.decode()
+        try:
+            msg_dict = json.loads(msg)
+            if msg_dict['username'] == my_username:
+                continue
+        except:
+            print("Malformed Server Message")
+            continue
+
+        chatBox.update_messages(msg)
+
+        if msg == 'exit':
+            clientSocket.close()
+            return 
+        print("Message Recieved From Server", msg)
+
 
 class User():
     max_x = TILE_COUNT -1
@@ -71,8 +108,8 @@ class Floor():
         
         for username, user in self.users.items():
             print(username)
-            rect_start = (self.start_dim[0]+ user.y_pos*self.grid_size[0], self.start_dim[1]+user.x_pos*self.grid_size[0])
-            pygame.draw.rect(Screen, user.color,pygame.Rect(rect_start,self.grid_size))
+            rect_start = (self.start_dim[0]+ user.y_pos*self.grid_size[0]+2, self.start_dim[1]+user.x_pos*self.grid_size[0]+2)
+            pygame.draw.rect(Screen, user.color,pygame.Rect(rect_start,(self.grid_size[0]-4,self.grid_size[1]-4)))
             
     def update_users(self, username):
         print(username)
@@ -114,17 +151,28 @@ class Chat():
         index = 1
         for msg in reversed(msgs[-self.num_messages:]):
             print(msg)
-            text_msg = msg["username"] + ": " + msg["text"]
+            text_msg = tr.fill(msg["username"] + ": " + msg["text"],width=20)
             chat_msgs = self.font.render(text_msg, True, (255,255,255))
             w, h =chat_msgs.get_size()
             self.screen.blit(chat_msgs,(16,self.start_dim[1]+CHAT_DIM[1] +25 -h/2 -index*50))
             index +=1
+    
+    def update_messages(self, message: str):
+        # Ignore message from myself
+        try:
+            msg_dict = json.loads(message)
+            self.messages.append(msg_dict)
+            self.draw(self.screen)
+        except:
+            print("Error occured: Malformed Server Message")
 
     def chat_input(self,event):
         if event.type == pygame.KEYDOWN:  
             if event.key == pygame.K_RETURN:
                 # send_chat(username,self.text)
-                self.messages.append({'username':my_username, 'text':self.text})
+                msg_dict = {"component": "chat", "username": my_username, 'text': self.text}
+                self.messages.append(msg_dict)
+                send_chat(clientSocket, json.dumps(msg_dict))
                 self.text = ''
                 self.draw(self.screen)
             elif event.key == pygame.K_BACKSPACE:
@@ -136,9 +184,8 @@ class Chat():
             pygame.draw.rect(self.screen, (220,220,220), self.input_rect)
             self.screen.blit(chat_label, (16,self.start_dim[1]+CHAT_DIM[1] +25 -h/2),(max(w-348,0), 0, 348, h))
 
-            
-            
-my_username = 'Rachit'
+
+my_username = input('Enter a Username:') 
 
 current_focus = "grid"
 pygame.init()
@@ -168,6 +215,15 @@ metaverse.add_user(myuser)
 chatBox = Chat(canvas, start_dim = CHAT_START_DIM)
 chatBox.draw(canvas)
 
+## Create a Separate Listening Thread
+
+# send_proc = threading.Thread(target=send_chat, args=[clientSocket])
+listen_proc = threading.Thread(target=listen_chat, args=[clientSocket, chatBox, my_username])
+
+#send_proc.start()
+listen_proc.start()
+
+## Start Listening to Input Now
 
 
 while True:
@@ -212,9 +268,19 @@ while True:
         else:
             chatBox.chat_input(event)
 
-
-        clock.tick(60)
+        clock.tick(60) # Cap the FPS
 
         pygame.display.flip()
-
 pygame.quit()
+
+
+## FORMAT FOR SENDING MESSAGES TO THE SERVER
+
+"""
+json message
+{
+    "component": "chat"/"audio", "misc",
+    "username" : username
+    "text" : text
+}
+"""
