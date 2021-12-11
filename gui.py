@@ -18,7 +18,7 @@ BLUE_COLOR = (0,0,255)
 RED_COLOR = (255,0,0)
 COLORS = []
 
-serverName = '10.42.0.1'
+serverName = 'localhost'
 serverPort = 12000
 
 clientSocket = socket(AF_INET, SOCK_STREAM)
@@ -172,7 +172,7 @@ class Chat():
         index = 1
         for msg in reversed(msgs[-self.num_messages:]):
             print(msg)
-            text_msg = tr.fill(msg["username"] + ": " + msg["text"],width=20)
+            text_msg = msg["username"] + ": " + msg["text"]
             chat_msgs = self.font.render(text_msg, True, (255,255,255))
             w, h =chat_msgs.get_size()
             self.screen.blit(chat_msgs,(16,self.start_dim[1]+CHAT_DIM[1] +25 -h/2 -index*50))
