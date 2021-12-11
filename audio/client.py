@@ -1,60 +1,65 @@
-import socket
-import os
-import threading
-import wave
-import pyaudio
-import time
-import queue
+import socket,os
+import threading, wave, pyaudio, time, queue
 
 host_name = socket.gethostname()
-host_ip = '117.194.116.107'  # socket.gethostbyname(host_name)
+host_ip = '117.194.116.107'#  socket.gethostbyname(host_name)
 print(host_ip)
 port = 12000
-q = queue.Queue(maxsize=-1)
-
-
-def record(stream, CHUNK):
-    while True:
-        q.put(stream.read(CHUNK))
-
-
+# For details visit: www.pyshine.com
+q_receive = queue.Queue(maxsize=-1)
+q_send = queue.Queue(maxsize=-1)
+        
 def audio_stream_UDP():
-	t = 1
-	BUFF_SIZE = 65536
-	client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, BUFF_SIZE)
-	p = pyaudio.PyAudio()
-	CHUNK = 1024*5
-	stream = p.open(format=pyaudio.paInt16,
-	                channels=2,
+    BUFF_SIZE = 65536
+    client_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    client_socket.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,BUFF_SIZE)
+    p = pyaudio.PyAudio()
+    CHUNK = 1024*5
+    down_stream = p.open(format=pyaudio.paInt16,
+                    channels=2,
+                    rate=44100,
+                    output=True,
+                    frames_per_buffer=CHUNK)
+    up_stream = p.open(format=pyaudio.paInt16,
+                    channels=2,
                     rate=44100,
                     input=True,
                     frames_per_buffer=CHUNK)
 
     # create socket
-	t_record = threading.Thread(target=record,args=())
-	t_record.start()
-	message = b'Hello'
-	client_socket.sendto(message, (host_ip, port))
-	socket_address = (host_ip, port)
+    def record(stream, CHUNK):
+        while True:
+            q_send.put(stream.read(CHUNK))
+       
+    def send_audio():
+        recorder_thread=threading.Thread(target=record,args=(up_stream,CHUNK,))
+        recorder_thread.start()
+        time.sleep(1)
+        while True:
+            data=q_send.get(CHUNK)
+            client_socket.sendto(data,(host_ip,port))        
+    sender_thread=threading.Thread(target=send_audio,args=())
+    sender_thread.start()
+    
+    def getAudioData():
+        while True:
+            frame,_= client_socket.recvfrom(BUFF_SIZE)
+            q_receive.put(frame)
+            print('Queue size...',q_receive.qsize())
+    receiver_thread = threading.Thread(target=getAudioData, args=())
+    receiver_thread.start()
+    time.sleep(1)
+    print('Now Playing...')
+    while True:
+        frame = q_receive.get()
+        down_stream.write(frame)
+    
+    client_socket.close()
+    print('Audio closed')
+    os._exit(1)
 
-	def getAudioData():
-		while True:
-			data = q.get(CHUNK)
-			client_socket.sendto(data, socket_address)
-			time.sleep(0.001)
-
-	t1 = threading.Thread(target=getAudioData, args=())
-	
-	t1.start()
-	time.sleep(1)
-	print('Now Playing...')
-	wf = wave.open('Audio_check.wav', 'wb')
-
-	client_socket.close()
-	print('Audio closed')
-	os._exit(1)
 
 
-t1 = threading.Thread(target=audio_stream_UDP, args=())
-t1.start()
+#t1 = threading.Thread(target=audio_stream_UDP, args=())
+#t1.start()
+audio_stream_UDP()

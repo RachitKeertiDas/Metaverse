@@ -18,7 +18,7 @@ BLUE_COLOR = (0,0,255)
 RED_COLOR = (255,0,0)
 COLORS = []
 
-serverName = '44.201.79.95'
+serverName = '10.42.0.1'
 serverPort = 12000
 
 clientSocket = socket(AF_INET, SOCK_STREAM)
