@@ -34,13 +34,17 @@ def audio_stream_UDP():
 	t1.start()
 	time.sleep(5)
 	print('Now Playing...')
+	wf = wave.open('Audio_check.wav','wb')
+	frames=[]
 	while not q.empty():
 		frame = q.get()
 		stream.write(frame)
-
-	client_socket.close()
-	print('Audio closed')
-	os._exit(1)
+		frames.append(frame)
+	wf.setnchannels(CHANNELS=2)
+	wf.setsampwidth(pyaudio.paInt16)
+	wf.setframerate(44100)
+	wf.writeframes(b''.join(frames))
+	wf.close()   
 
 
 
