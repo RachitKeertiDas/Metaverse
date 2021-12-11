@@ -29,6 +29,9 @@ https://pyshine.com/How-to-send-audio-from-PyAudio-over-socket/
 For issues regarding pyaudio installation  
 https://stackoverflow.com/questions/20023131/cannot-install-pyaudio-gcc-error
 
+For chat input system  
+https://stackoverflow.com/questions/46390231/how-can-i-create-a-text-input-box-with-pygame
+
 ### Authors: 
 
 - [Anmol Rastogi](https://github.com/Anmol42) (AI19BTECH11021)
