@@ -7,20 +7,23 @@ print(host_ip)
 port = 12000
 # For details visit: www.pyshine.com
 from queue import Queue
-
 wf = Queue(maxsize=-1)
 
-# def console(q):
-#     while 1:
-#         cmd = input('> ')
-#         q.put(cmd)
-#         if cmd == 'q':
-#             break
 
 
-def record(stream,CHUNK):
-	while True:
-		wf.put(stream.read(CHUNK))
+def console(q):
+    while 1:
+        cmd = input('> ')
+        q.put(cmd)
+        if cmd == 'q':
+            break
+
+to_record = True
+
+def play(stream,CHUNK):
+	while not wf.empty():
+		frame = wf.get()
+		stream.write(frame)
 	
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
@@ -30,7 +33,7 @@ CHUNK = 1024*5
 
 p = pyaudio.PyAudio()
 
-stream = p.open(format = FORMAT, channels = CHANNELS, rate = RATE,  input = True, frames_per_buffer = CHUNK )
+stream = p.open(format = FORMAT, channels = CHANNELS, rate = RATE,  output = True, frames_per_buffer = CHUNK )
 
 
 
@@ -60,20 +63,17 @@ def audio_stream_UDP():
 		DATA_SIZE = math.ceil(wf.qsize()/CHUNK)
 		DATA_SIZE = str(DATA_SIZE).encode()
 		print('[Sending data size]...',wf.qsize()/sample_rate)
-		server_socket.sendto(DATA_SIZE,client_addr)
+		# server_socket.sendto(DATA_SIZE,client_addr)
 		while True:
-			
-			data = wf.get(CHUNK)
-			# if(data == 'q'):
-			# 	break
-			server_socket.sendto(data,client_addr)
-			time.sleep(0.001) # Here you can adjust it according to how fast you want to send data keep it > 0
+			frame, _ = server_socket.recvfrom(BUFF_SIZE)
+			wf.put(frame)
+			print('Queue size',wf.qsize())
 		break
 	print('SENT...')            
 
 t1 = threading.Thread(target=audio_stream_UDP, args=())
-t2 = threading.Thread(target = record, args = (stream, CHUNK,))
-# t3 = threading.Thread(target=console,args=(wf))
+t2 = threading.Thread(target = play, args = (stream, CHUNK,))
+# t3 = threading.Thread(target=console,args=(wf,))
 
 t2.start()
 t1.start()
